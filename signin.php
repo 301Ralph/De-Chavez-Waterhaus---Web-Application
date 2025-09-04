@@ -60,7 +60,7 @@ include 'includes/connection.php';
 <!-- Main Sign In Section -->
 <section class="hero-section">
   <div class="wrapper">
-    <form action="signin_handler.php" method="post">
+    <form action="actions/signin_action.php" method="post">
       <h2 style="font-family: 'Poppins', sans-serif;">Sign In to Your Account</h2>
 
       <div class="input-field">
@@ -74,15 +74,21 @@ include 'includes/connection.php';
         <label for="email">Email Address</label>
       </div>
 
-      <div class="input-field">
+      <div class="input-field position-relative">
         <input
           type="password"
           id="password"
           name="password"
           required
           autocomplete="current-password"
-          />
+        />
         <label for="password">Password</label>
+        <span class="position-absolute top-50 end-0 translate-middle-y me-3" style="cursor:pointer;" onclick="togglePassword()">
+          <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+        </span>
+      </div>
+      <div class="text-end mb-3">
+        <a href="forgot_password.php" class="text-decoration-none text-light">Forgot Password?</a>
       </div>
 
       <button type="submit">Sign In</button>
@@ -125,5 +131,20 @@ include 'includes/connection.php';
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function togglePassword() {
+  const password = document.getElementById("password");
+  const icon = document.getElementById("togglePasswordIcon");
+  if (password.type === "password") {
+    password.type = "text";
+    icon.classList.remove("bi-eye-slash");
+    icon.classList.add("bi-eye");
+  } else {
+    password.type = "password";
+    icon.classList.remove("bi-eye");
+    icon.classList.add("bi-eye-slash");
+  }
+}
+</script>
 </body>
 </html>
