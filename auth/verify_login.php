@@ -35,7 +35,7 @@ if (isset($_GET['resend'])) {
         $mail->Host = 'smtp.sendgrid.net';
         $mail->SMTPAuth = true;
         $mail->Username = 'apikey';
-        $mail->Password = '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'; // replace with your SendGrid API Key
+        $mail->Password = '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'; // replace with your SendGrid API Key
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
@@ -91,12 +91,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enteredCode = $_POST['code'];
 
     if (isset($_SESSION['login_verification_code']) && $enteredCode == $_SESSION['login_verification_code']) {
-        // Success → set session user
-        $_SESSION['user'] = $user;
+        // Success → set session variables
+        $_SESSION['userID']   = $user['id'];
+        $_SESSION['role']     = $user['role'];
+        $_SESSION['userName'] = $user['name'];
+
+        // Clean up temporary login sessions
         unset($_SESSION['pending_login']);
         unset($_SESSION['login_verification_code']);
-        header("Location: ../customer/customer_dashboard.php");
-        exit();
+        unset($_SESSION['last_code_sent']);
+
+        // Redirect based on role
+        if ($user['role'] === 'customer') {
+            header("Location: ../customer/customer_dashboard.php");
+            exit();
+        } elseif ($user['role'] === 'admin') {
+            header("Location: ../admin/admin_dashboard.php");
+            exit();
+        } elseif ($user['role'] === 'rider') {
+            header("Location: ../rider/rider_dashboard.php");
+            exit();
+        } else {
+            header("Location: ../signin.php?error=Role not recognized.");
+            exit();
+        }
     } else {
         header("Location: verify_login.php?error=Invalid verification code.");
         exit();

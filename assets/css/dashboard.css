@@ -1,0 +1,179 @@
+/* ===============================
+   Dashboard Global Styles
+   =============================== */
+:root {
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 80px;
+  --transition-speed: 0.3s;
+
+  --primary-color: #0d6efd;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --light-bg: #f8f9fa;
+  --dark-text: #212529;
+  --muted-text: #6c757d;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background: var(--light-bg);
+  color: var(--dark-text);
+  margin: 0;
+  padding: 0;
+}
+
+/* ===============================
+   Sidebar
+   =============================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100%;
+  background: #fff;
+  border-right: 1px solid #dee2e6;
+  transition: width var(--transition-speed);
+  overflow-x: hidden;
+  z-index: 1000;
+}
+
+.sidebar.close {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar .logo {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  gap: 10px;
+}
+
+.sidebar .logo img {
+  height: 40px;
+}
+
+.sidebar .logo_name {
+  font-weight: bold;
+  font-size: 18px;
+  white-space: nowrap;
+  transition: opacity var(--transition-speed);
+}
+
+.sidebar.close .logo_name {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar .nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar .nav-links li {
+  margin: 5px 0;
+}
+
+.sidebar .nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: var(--dark-text);
+  text-decoration: none;
+  transition: background var(--transition-speed), color var(--transition-speed);
+  border-radius: 6px;
+}
+
+.sidebar .nav-links a:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.sidebar .nav-links a.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.sidebar.close .link-name {
+  display: none;
+}
+
+/* ===============================
+   Content Area
+   =============================== */
+.content {
+  margin-left: var(--sidebar-width);
+  padding: 20px;
+  transition: margin-left var(--transition-speed);
+}
+
+.content.active {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ===============================
+   Topbar
+   =============================== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.sidebar-toggle {
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+/* ===============================
+   Cards
+   =============================== */
+.card {
+  border-radius: 12px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ===============================
+   Tables
+   =============================== */
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background: var(--light-bg);
+  font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f3f5;
+  cursor: pointer;
+}
+
+/* ===============================
+   Responsive Adjustments
+   =============================== */
+@media (max-width: 768px) {
+  .sidebar {
+    left: -250px;
+  }
+
+  .sidebar.close {
+    left: 0;
+  }
+
+  .content,
+  .content.active {
+    margin-left: 0;
+  }
+}

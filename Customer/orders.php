@@ -2,39 +2,35 @@
 include '../includes/connection.php';
 session_start();
 
-// Check if the user is logged in and is a customer
-if (!isset($_SESSION['userID']) || $_SESSION['role'] !== 'customer') {
-    echo '<script type="text/javascript">
+// Check login and role
+if (!isset($_SESSION['userID']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'customer') {
+    echo '<script>
         alert("Access denied. Customers only.");
-        window.location = "../login.php";
-        </script>';
+        window.location = "../signin.php";
+    </script>';
     exit();
 }
 
-// Fetch customer verification status
-$userID = $_SESSION['userID'];
-$customerQuery = "SELECT isVerified FROM customers WHERE userID = $userID";
-$customerResult = $conn->query($customerQuery);
-$customer = $customerResult->fetch_assoc();
-$isVerified = $customer['isVerified'];
+$userID = (int) $_SESSION['userID'];
+$userName = isset($_SESSION['userName']) ? $_SESSION['userName'] : "Customer";
 
-// Fetch orders for the logged-in customer
-$ordersQuery = "
-    SELECT orders.orderID, orders.order_date, orders.total_amount, orders.status, 
-           GROUP_CONCAT(CONCAT(product.ProductName, ' (', order_items.quantity, ' x ', order_items.unit_price, ')') SEPARATOR ', ') as products
-    FROM orders
-    JOIN order_items ON orders.orderID = order_items.orderID
-    JOIN product ON order_items.productID = product.ProductID
-    WHERE orders.customerID = $userID
-    GROUP BY orders.orderID, orders.order_date, orders.total_amount, orders.status
-";
-$ordersResult = $conn->query($ordersQuery);
-
-if (!$ordersResult) {
-    die("Query failed: " . $conn->error);
+// Fetch orders (using your table name `order`)
+$orders = [];
+if ($stmt = $conn->prepare("
+    SELECT orderID, order_date, total_amount, status
+    FROM `order`
+    WHERE customerID = ?
+    ORDER BY order_date DESC
+")) {
+    $stmt->bind_param("i", $userID);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $orders[] = $row;
+    }
+    $stmt->close();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,184 +39,104 @@ if (!$ordersResult) {
     <title>Orders | De Chavez Waterhaus</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../Designs/custom-style.css">
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 250px;
-            background-color: #f8f9fa;
-            padding-top: 20px;
-            transition: width 0.3s;
-        }
-        .sidebar.close {
-            width: 80px;
-        }
-        .sidebar .logo {
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            margin-bottom: 20px;
-        }
-        .sidebar .logo img {
-            width: 40px;
-            border-radius: 50%;
-        }
-        .sidebar .logo .logo_name {
-            font-size: 22px;
-            font-weight: 600;
-            margin-left: 10px;
-            transition: opacity 0.3s;
-        }
-        .sidebar.close .logo .logo_name {
-            opacity: 0;
-        }
-        .sidebar .nav-links {
-            list-style: none;
-            padding: 0;
-        }
-        .sidebar .nav-links li {
-            width: 100%;
-        }
-        .sidebar .nav-links li a {
-            display: flex;
-            align-items: center;
-            padding: 15px 20px;
-            text-decoration: none;
-            color: #333;
-            transition: background-color 0.3s;
-        }
-        .sidebar .nav-links li a:hover {
-            background-color: #e2e6ea;
-        }
-        .sidebar .nav-links li a i {
-            font-size: 24px;
-            min-width: 45px;
-        }
-        .sidebar .nav-links li a .link-name {
-            font-size: 18px;
-            transition: opacity 0.3s;
-        }
-        .sidebar.close .nav-links li a .link-name {
-            opacity: 0;
-        }
-        .content {
-            margin-left: 250px;
-            padding: 20px;
-            transition: margin-left 0.3s;
-        }
-        .sidebar.close ~ .content {
-            margin-left: 80px;
-        }
-        .sidebar-toggle {
-            font-size: 26px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="../assets/css/dashboard.css"> <!-- shared CSS -->
 </head>
 <body>
+    <!-- Sidebar -->
     <nav class="sidebar">
         <div class="logo">
-            <img src="../images/logo.png" alt="Logo">
-            <span class="logo_name">De Chavez</span>
+            <img src="../assets/images/Logo.png" alt="Logo">
+            <span class="logo_name">De Chavez Waterhaus</span>
         </div>
-
         <ul class="nav-links">
-            <li><a href="customer_dashboard.php">
-                <i class="bi bi-house-door"></i>
-                <span class="link-name">Home</span>
-            </a></li>
-            <li><a href="products.php">
-                <i class="bi bi-box"></i>
-                <span class="link-name">Products</span>
-            </a></li>
-            <li><a href="orders.php">
-                <i class="bi bi-cart"></i>
-                <span class="link-name">Orders</span>
-            </a></li>
-            <li><a href="order_history.php">
-                <i class="bi bi-clock-history"></i>
-                <span class="link-name">Order History</span>
-            </a></li>
-            <li><a href="ticket.php">
-                <i class="bi bi-inbox"></i>
-                <span class="link-message ">Tickets</span>
-            </a></li>
-            <li><a href="notification.php">
-                <i class="bi bi-bell"></i>
-                <span class="link-name">Notification</span>
-            </a></li>
-            <li><a href="profile.php">
-                <i class="bi bi-person"></i>
-                <span class="link-name">Profile</span>
-            </a></li>
-            <li><a href="../logout.php">
-                <i class="bi bi-box-arrow-right"></i>
-                <span class="link-name">Logout</span>
-            </a></li>
+            <li><a href="customer_dashboard.php"><i class="bi bi-house-door"></i><span class="link-name">Home</span></a></li>
+            <li><a href="products.php"><i class="bi bi-box"></i><span class="link-name">Products</span></a></li>
+            <li><a href="orders.php" class="active"><i class="bi bi-cart"></i><span class="link-name">Orders</span></a></li>
+            <li><a href="order_history.php"><i class="bi bi-clock-history"></i><span class="link-name">Order History</span></a></li>
+            <li><a href="ticket.php"><i class="bi bi-inbox"></i><span class="link-name">Tickets</span></a></li>
+            <li><a href="notification.php"><i class="bi bi-bell"></i><span class="link-name">Notification</span></a></li>
+            <li><a href="profile.php"><i class="bi bi-person"></i><span class="link-name">Profile</span></a></li>
+            <li><a href="../actions/logout.php"><i class="bi bi-box-arrow-right"></i><span class="link-name">Logout</span></a></li>
         </ul>
     </nav>
 
+    <!-- Content -->
     <div class="content">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <i class="bi bi-list sidebar-toggle"></i>
-            <h1>Orders</h1>
+        <div class="topbar">
+            <i class="bi bi-list sidebar-toggle" id="sidebarToggle"></i>
+            <h1 class="h3 fw-bold">📦 My Orders</h1>
         </div>
 
-        <h2>Your Orders</h2>
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Order Date</th>
-                        <th>Products</th>
-                        <th>Total Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($order = $ordersResult->fetch_assoc()) { ?>
-                        <tr>
-                            <td><?php echo date('Y-m-d', strtotime($order['order_date'])); ?></td>
-                            <td><?php echo $order['products']; ?></td>
-                            <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
-                            <td><?php echo ucfirst($order['status']); ?></td>
-                            <td>
-                                <?php if ($order['status'] == 'accepted') { ?>
-                                    <form action="cancel_order.php" method="POST" onsubmit="return confirmCancellation();" style="display:inline;">
-                                        <input type="hidden" name="orderID" value="<?php echo $order['orderID']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
-                                    </form>
-                                <?php } elseif ($order['status'] == 'out_for_delivery' || $order['status'] == 'delivered') { ?>
-                                    <button class="btn btn-secondary btn-sm" disabled><?php echo ucfirst($order['status']); ?></button>
-                                <?php } else { ?>
-                                    <button class="btn btn-secondary btn-sm" disabled>Cannot Cancel</button>
-                                <?php } ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
+        <div class="dash-content">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Your Orders</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Order #</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Amount</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (count($orders) > 0): ?>
+                                    <?php foreach ($orders as $order): ?>
+                                        <?php
+                                            $status = strtolower($order['status']);
+                                            if ($status === 'completed') $statusClass = 'success';
+                                            elseif ($status === 'pending') $statusClass = 'warning';
+                                            elseif ($status === 'canceled' || $status === 'cancelled') $statusClass = 'danger';
+                                            else $statusClass = 'secondary';
+
+                                            $orderNum = htmlspecialchars($order['orderID']);
+                                            $dateStr = $order['order_date'] ? date("M d, Y h:i A", strtotime($order['order_date'])) : '-';
+                                            $amount = isset($order['total_amount']) ? '₱' . number_format((float)$order['total_amount'], 2) : '-';
+                                            $statusLabel = ucfirst($status);
+                                        ?>
+                                        <tr>
+                                            <td>#<?= $orderNum ?></td>
+                                            <td><?= $dateStr ?></td>
+                                            <td><?= $amount ?></td>
+                                            <td><span class="badge bg-<?= $statusClass ?>"><?= $statusLabel ?></span></td>
+                                            <td>
+                                                <?php if ($status === 'pending'): ?>
+                                                    <form action="cancel_order.php" method="POST" onsubmit="return confirm('Cancel this order?');">
+                                                        <input type="hidden" name="orderID" value="<?= $orderNum ?>">
+                                                        <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <button class="btn btn-sm btn-secondary" disabled>No Action</button>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No orders found.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const sidebar = document.querySelector(".sidebar");
-        const toggle = document.querySelector(".sidebar-toggle");
+        const toggle = document.getElementById("sidebarToggle");
 
         toggle.addEventListener("click", () => {
             sidebar.classList.toggle("close");
+            document.querySelector(".content").classList.toggle("active");
         });
-
-        function confirmCancellation() {
-            return confirm("Are you sure you want to cancel this order?");
-        }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
