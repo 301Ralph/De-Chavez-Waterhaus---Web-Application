@@ -83,7 +83,6 @@ if ($stmt = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ?
     <div class="content">
         <div class="topbar">
             <i class="bi bi-list sidebar-toggle" id="sidebarToggle"></i>
-            <h1 class="h3 fw-bold">Customer Dashboard</h1>
         </div>
 
         <div class="dash-content">
