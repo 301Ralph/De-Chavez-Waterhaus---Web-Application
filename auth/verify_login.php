@@ -1,10 +1,15 @@
 <?php
 session_start();
-require '../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 include '../includes/connection.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use Dotenv\Dotenv;
+
+// Load environment variables
+$dotenv = Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
 
 // If no user data, redirect
 if (!isset($_SESSION['pending_login'])) {
@@ -32,18 +37,18 @@ if (isset($_GET['resend'])) {
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host = 'smtp.sendgrid.net';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'apikey';
-        $mail->Password = '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'; // replace with your SendGrid API Key
+        $mail->Host       = 'smtp.sendgrid.net';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'apikey';
+        $mail->Password   = $_ENV['SENDGRID_API_KEY']; 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port       = 587;
 
-        $mail->setFrom("aiacc401@gmail.com", "De Chavez Waterhaus");
+        $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
         $mail->addAddress($user['email'], $user['name']);
 
         $mail->isHTML(true);
-        $mail->Subject = "🔐 Login Verification Code - De Chavez Waterhaus";
+        $mail->Subject = "Login Verification Code - De Chavez Waterhaus";
         $mail->Body = "
         <!DOCTYPE html>
         <html>
