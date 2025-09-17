@@ -6,6 +6,10 @@ include '../includes/connection.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Load environment variables
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
 
@@ -25,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ssi", $token, $expires, $user['id']);
         $stmt->execute();
 
-        $reset_link = "http://localhost/DeChavezWatersation/actions/reset_password.php?token=" . $token;
+        // Build reset link
+        $reset_link = $_ENV['APP_URL'] . "/actions/reset_password.php?token=" . $token;
 
         // Send email
         $mail = new PHPMailer(true);
@@ -33,21 +38,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->isSMTP();
             $mail->Host = 'smtp.sendgrid.net';
             $mail->SMTPAuth = true;
-            $mail->Username = 'apikey';
-            $mail->Password = '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'; // replace with real key
+            $mail->Username = 'apikey'; // SendGrid requires this literal value
+            $mail->Password = $_ENV['SENDGRID_API_KEY']; // ✅ from .env
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port = 587;
 
-            $mail->setFrom('aiacc401@gmail.com', 'De Chavez Waterhaus');
+            $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
             $mail->addAddress($user['email'], $user['name']);
 
             $mail->isHTML(true);
             $mail->Subject = "Password Reset Request";
-            $mail->Body = "Hello " . htmlspecialchars($user['name']) . ",<br><br>
+            $mail->Body = "
+                Hello " . htmlspecialchars($user['name']) . ",<br><br>
                 We received a request to reset your password.<br>
                 <a href='$reset_link'>Click here to reset your password</a><br><br>
                 This link will expire in 1 hour.<br><br>
-                If you did not request this, please ignore this email.";
+                If you did not request this, please ignore this email.
+            ";
 
             $mail->send();
             header("Location: ../forgot_password.php?success=" . urlencode("We sent a reset link to your email."));

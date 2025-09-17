@@ -6,6 +6,10 @@ include '../includes/connection.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Load environment variables
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
+
 // Get form inputs
 $name = trim($_POST['name']);
 $email = trim($_POST['email']);
@@ -47,7 +51,7 @@ $stmt->close();
 
 // Generate verification token
 $token = bin2hex(random_bytes(16));
-$verify_link = "http://localhost/DeChavezWatersation/actions/verify_email.php?token=" . $token;
+$verify_link = $_ENV['APP_URL'] . "/actions/verify_email.php?token=" . $token;
 
 // Send verification email
 $mail = new PHPMailer(true);
@@ -56,12 +60,12 @@ try {
     $mail->isSMTP();
     $mail->Host = 'smtp.sendgrid.net';
     $mail->SMTPAuth = true;
-    $mail->Username = 'apikey';
-    $mail->Password = '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';
+    $mail->Username = 'apikey'; // Required by SendGrid
+    $mail->Password = $_ENV['SENDGRID_API_KEY']; // ✅ From .env
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
 
-    $mail->setFrom('aiacc401@gmail.com', 'De Chavez Waterstation');
+    $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
     $mail->addAddress($email, $name);
 
     $mail->isHTML(true);
