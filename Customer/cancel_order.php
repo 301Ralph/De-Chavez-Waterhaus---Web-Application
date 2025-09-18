@@ -2,42 +2,60 @@
 include '../includes/connection.php';
 session_start();
 
-// Check if the user is logged in and is a customer
+// ✅ Check login & role
 if (!isset($_SESSION['userID']) || $_SESSION['role'] !== 'customer') {
-    echo '<script type="text/javascript">
+    echo '<script>
         alert("Access denied. Customers only.");
-        window.location = "../login.php";
-        </script>';
+        window.location = "../signin.php";
+    </script>';
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $orderID = $_POST['orderID'];
-    $userID = $_SESSION['userID'];
+if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+    $orderID = (int) $_GET['id'];
+    $userID = (int) $_SESSION['userID'];
 
-    // Check if the order belongs to the logged-in customer and is in 'accepted' status
-    $orderQuery = "SELECT * FROM orders WHERE orderID = $orderID AND customerID = $userID AND status = 'accepted'";
-    $orderResult = $conn->query($orderQuery);
+    // ✅ Check if order belongs to customer and is still pending
+    $stmt = $conn->prepare("SELECT status FROM `order` WHERE orderID = ? AND customerID = ? LIMIT 1");
+    $stmt->bind_param("ii", $orderID, $userID);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if ($orderResult->num_rows > 0) {
-        // Update the order status to 'canceled'
-        $updateQuery = "UPDATE orders SET status = 'canceled' WHERE orderID = $orderID";
-        if ($conn->query($updateQuery) === TRUE) {
-            echo '<script type="text/javascript">
-                alert("Order canceled successfully.");
-                window.location = "orders.php";
+    if ($result && $result->num_rows === 1) {
+        $order = $result->fetch_assoc();
+        if (strtolower($order['status']) === 'pending') {
+            // ✅ Cancel the order
+            $update = $conn->prepare("UPDATE `order` SET status = 'canceled' WHERE orderID = ? AND customerID = ?");
+            $update->bind_param("ii", $orderID, $userID);
+            if ($update->execute()) {
+                echo '<script>
+                    alert("Order canceled successfully.");
+                    window.location = "orders.php";
                 </script>';
+            } else {
+                echo '<script>
+                    alert("Failed to cancel the order. Please try again.");
+                    window.location = "orders.php";
+                </script>';
+            }
+            $update->close();
         } else {
-            echo '<script type="text/javascript">
-                alert("Failed to cancel the order.");
+            echo '<script>
+                alert("This order cannot be canceled anymore.");
                 window.location = "orders.php";
-                </script>';
+            </script>';
         }
     } else {
-        echo '<script type="text/javascript">
-            alert("Order cannot be canceled.");
+        echo '<script>
+            alert("Order not found.");
             window.location = "orders.php";
-            </script>';
+        </script>';
     }
+    $stmt->close();
+} else {
+    echo '<script>
+        alert("Invalid request.");
+        window.location = "orders.php";
+    </script>';
 }
 ?>
